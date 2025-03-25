@@ -1,0 +1,543 @@
+{ name: "Space Tourism", popularity: 76, category: "Science" },
+      { name: "Crypto Market Crash", popularity: 93, category: "Finance" },
+      { name: "Mental Health Apps", popularity: 87, category: "Health" },
+      { name: "Olympic Games Updates", popularity: 90, category: "Sports" },
+      { name: "DIY Home Renovation", popularity: 83, category: "Home" },
+      { name: "True Crime Podcasts", popularity: 92, category: "Entertainment" },
+      { name: "Metaverse Development", popularity: 80, category: "Technology" },
+      { name: "Next-Gen Gaming Consoles", popularity: 88, category: "Gaming" },
+      { name: "Viral Food Challenges", popularity: 81, category: "Food" },
+      { name: "Remote Learning Tools", popularity: 77, category: "Education" }
+    ];
+
+    // Generate random questions based on seed for the day
+    function generateDailyQuestions(count) {
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      
+      // Simple seeded random function
+      const seededRandom = function(max, min) {
+        seed = (seed * 9301 + 49297) % 233280;
+        const rnd = seed / 233280;
+        return min + rnd * (max - min);
+      };
+      
+      // Shuffle array using seed
+      const shuffleSeed = function(array) {
+        let currentIndex = array.length, temporaryValue, randomIndex;
+        let s = seed;
+        
+        while (0 !== currentIndex) {
+          s = (s * 9301 + 49297) % 233280;
+          randomIndex = Math.floor((s / 233280) * currentIndex);
+          currentIndex -= 1;
+          
+          temporaryValue = array[currentIndex];
+          array[currentIndex] = array[randomIndex];
+          array[randomIndex] = temporaryValue;
+        }
+        
+        return array;
+      };
+      
+      // Create today's questions
+      const questions = [];
+      const topics = shuffleSeed([...trendingTopics]);
+      
+      for (let i = 0; i < count; i++) {
+        if (i * 2 + 1 >= topics.length) break;
+        
+        const [topicA, topicB] = [topics[i*2], topics[i*2+1]];
+        questions.push({
+          topics: [topicA, topicB],
+          correctAnswer: topicA.popularity > topicB.popularity ? 0 : 1
+        });
+      }
+      
+      return questions;
+    }
+
+    // Generate global leaderboard
+    function generateGlobalLeaderboard() {
+      const names = [
+        "GamingWizard", "PixelPro", "TrendMaster", "QuizChamp", 
+        "LeaderboardLegend", "FlashKing", "TrendGenius", "ScoreHunter",
+        "TriviaQueen", "TopTrender", "GameGuru", "QuizWhiz",
+        "MasterMind", "TrendTracker", "PointCollector", "BrainWave",
+        "ScoreStacker", "QuizAce", "TrendSetter", "GameMaster"
+      ];
+      
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      let s = seed;
+      
+      const leaderboard = [];
+      
+      // Generate top scores
+      for (let i = 0; i < 20; i++) {
+        s = (s * 9301 + 49297) % 233280;
+        const randomIndex = Math.floor((s / 233280) * names.length);
+        const name = names[randomIndex];
+        
+        s = (s * 9301 + 49297) % 233280;
+        const scoreRandom = s / 233280;
+        const baseScore = 800 + Math.floor(scoreRandom * 200);
+        
+        leaderboard.push({
+          userId: generateAnonymousId(),
+          username: `${name}${Math.floor(Math.random() * 100)}`,
+          displayName: name,
+          score: baseScore - (i * 10),
+          streak: Math.floor(Math.random() * 10) + 1
+        });
+      }
+      
+      // Sort by score
+      return leaderboard.sort((a, b) => b.score - a.score);
+    }
+
+    // Time until next daily challenge
+    function getTimeUntilNextChallenge() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      return tomorrow - now;
+    }
+
+    // Update countdown timer
+    function updateCountdown() {
+      const timeRemaining = getTimeUntilNextChallenge();
+      const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+      const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+      
+      const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      elements.countdownTimer.textContent = `New challenge in ${timeString}`;
+      elements.nextBonusCountdown.textContent = `Next challenge in ${timeString}`;
+      elements.nextChallengeTime.textContent = `Next challenge in ${timeString}`;
+      
+      setTimeout(updateCountdown, 1000);
+    }
+
+    // Check if daily challenge has been completed
+    function checkDailyCompletion() {
+      const todayKey = getTodayKey();
+      const todayGame = gameState.gameHistory[todayKey];
+      
+      if (todayGame && todayGame.completed) {
+        gameState.dailyCompleted = true;
+        gameState.score = todayGame.score;
+        gameState.todayResults = todayGame.results;
+        
+        // Show daily bonus info
+        elements.dailyBonus.style.display = 'block';
+        elements.optionsContainer.style.display = 'none';
+        elements.question.textContent = 'You\'ve completed today\'s challenge!';
+        elements.nextBtn.disabled = true;
+        
+        // Update score display
+        elements.scoreDisplay.textContent = gameState.score;
+        
+        return true;
+      }
+      
+      return false;
+    }
+
+    // Update streak
+    function updateStreak() {
+      const today = getTodayKey();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+      
+      if (gameState.lastPlayed !== today) {
+        // If the game was played yesterday, continue streak
+        if (gameState.lastPlayed === yesterdayKey) {
+          // Streak continues
+          gameState.streak = (gameState.streak || 0) + 1;
+        } else if (gameState.lastPlayed !== null && gameState.lastPlayed !== today) {
+          // Streak broken
+          gameState.streak = 1;
+        }
+        
+        // Update longest streak
+        if (gameState.streak > gameState.longestStreak) {
+          gameState.longestStreak = gameState.streak;
+          LocalStore.set('longestStreak', gameState.longestStreak);
+        }
+        
+        gameState.lastPlayed = today;
+        LocalStore.set('lastPlayed', today);
+        LocalStore.set('streak', gameState.streak);
+      }
+      
+      elements.streakDisplay.textContent = gameState.streak || 0;
+      elements.longestStreak.textContent = gameState.longestStreak || 0;
+      
+      if (gameState.streak >= 3) {
+        elements.streakMessage.textContent = `${gameState.streak} day streak! Keep it up!`;
+        elements.flameIcon.style.display = 'inline';
+      } else if (gameState.streak > 0) {
+        elements.streakMessage.textContent = `${gameState.streak} day streak! Come back tomorrow!`;
+        elements.flameIcon.style.display = 'inline';
+      } else {
+        elements.streakMessage.textContent = 'Play daily to build your streak!';
+        elements.flameIcon.style.display = 'none';
+      }
+    }
+
+    // Update progress bar
+    function updateProgress() {
+      const progress = (gameState.currentQuestion / gameState.totalQuestions) * 100;
+      elements.progressBar.style.width = `${progress}%`;
+    }
+
+    // Update score
+    function updateScore(points) {
+      gameState.score += points;
+      elements.scoreDisplay.textContent = gameState.score;
+      
+      // Update high score if needed
+      if (gameState.score > gameState.highScore) {
+        gameState.highScore = gameState.score;
+        LocalStore.set('highScore', gameState.highScore);
+        elements.highestScore.textContent = gameState.highScore;
+      }
+    }
+
+    // Display question
+    function displayQuestion() {
+      if (gameState.currentQuestion >= gameState.totalQuestions) {
+        endGame();
+        return;
+      }
+      
+      const question = gameState.questions[gameState.currentQuestion];
+      
+      elements.question.textContent = 'Which trending topic had more searches last month?';
+      
+      elements.optionsContainer.innerHTML = '';
+      question.topics.forEach((topic, index) => {
+        const optionEl = document.createElement('div');
+        optionEl.className = 'option';
+        optionEl.setAttribute('data-index', index);
+        
+        // Add category badge
+        const topicSpan = document.createElement('span');
+        topicSpan.textContent = topic.name;
+        
+        const categoryBadge = document.createElement('span');
+        categoryBadge.className = 'category-badge';
+        categoryBadge.textContent = topic.category;
+        
+        optionEl.appendChild(topicSpan);
+        optionEl.appendChild(categoryBadge);
+        
+        optionEl.addEventListener('click', () => selectOption(index));
+        elements.optionsContainer.appendChild(optionEl);
+      });
+      
+      gameState.isAnswered = false;
+      gameState.selectedOption = null;
+      elements.nextBtn.disabled = true;
+      
+      updateProgress();
+    }
+
+    // Select option
+    function selectOption(index) {
+      if (gameState.isAnswered) return;
+      
+      gameState.selectedOption = index;
+      gameState.isAnswered = true;
+      
+      const question = gameState.questions[gameState.currentQuestion];
+      const isCorrect = index === question.correctAnswer;
+      
+      // Track result for sharing
+      gameState.todayResults.push(isCorrect);
+      
+      // Update statistics
+      gameState.totalAnswered++;
+      if (isCorrect) gameState.totalCorrect++;
+      
+      LocalStore.set('totalAnswered', gameState.totalAnswered);
+      LocalStore.set('totalCorrect', gameState.totalCorrect);
+      
+      // Calculate and update accuracy
+      const accuracyPercentage = Math.round((gameState.totalCorrect / gameState.totalAnswered) * 100);
+      elements.accuracy.textContent = `${accuracyPercentage}%`;
+      
+      // Update UI
+      const options = elements.optionsContainer.querySelectorAll('.option');
+      options.forEach(option => {
+        const optionIndex = parseInt(option.getAttribute('data-index'));
+        
+        if (optionIndex === gameState.selectedOption) {
+          option.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+        
+        if (optionIndex === question.correctAnswer) {
+          option.classList.add('correct');
+        }
+      });
+      
+      // Update score
+      if (isCorrect) {
+        // Bonus points for streaks
+        const streakBonus = Math.min(10, gameState.streak);
+        const basePoints = 100;
+        const bonusPoints = streakBonus * 10;
+        const totalPoints = basePoints + bonusPoints;
+        
+        updateScore(totalPoints);
+      }
+      
+      elements.nextBtn.disabled = false;
+    }
+
+    // Next question
+    function nextQuestion() {
+      gameState.currentQuestion++;
+      displayQuestion();
+    }
+
+    // End game
+    function endGame() {
+      // Update game history
+      const todayKey = getTodayKey();
+      gameState.gameHistory[todayKey] = {
+        completed: true,
+        date: new Date().toISOString(),
+        score: gameState.score,
+        results: gameState.todayResults
+      };
+      
+      // Update games played counter
+      gameState.gamesPlayed++;
+      
+      // Save stats
+      LocalStore.set('gameHistory', gameState.gameHistory);
+      LocalStore.set('gamesPlayed', gameState.gamesPlayed);
+      
+      // Update game state
+      gameState.dailyCompleted = true;
+      
+      // Update UI elements
+      elements.gamesPlayed.textContent = gameState.gamesPlayed;
+      elements.dailyBonus.style.display = 'block';
+      elements.finalScore.textContent = `Your score: ${gameState.score}`;
+      elements.finalStreak.textContent = `Your current streak: ${gameState.streak}`;
+      
+      // Create result grid for sharing
+      elements.resultGrid.innerHTML = '';
+      gameState.todayResults.forEach(result => {
+        const square = document.createElement('div');
+        square.className = `result-square ${result ? 'result-correct' : 'result-incorrect'}`;
+        elements.resultGrid.appendChild(square);
+      });
+      
+      // Show results modal
+      elements.resultsModal.style.display = 'flex';
+      
+      // Update calendar
+      updateCalendar();
+    }
+
+    // Share results
+    function shareResults() {
+      // Create emoji grid like Wordle
+      const emojiGrid = gameState.todayResults.map(result => result ? '🟩' : '🟥').join('');
+      const dateStr = new Date().toLocaleDateString();
+      
+      // Create shareable text
+      const text = `TrendFlash ${dateStr}\nScore: ${gameState.score} | Streak: ${gameState.streak}\n\n${emojiGrid}\n\nPlay at: ${window.location.href}`;
+      
+      // Check if Web Share API is available
+      if (navigator.share) {
+        navigator.share({
+          title: 'My TrendFlash Results',
+          text: text
+        }).catch(err => {
+          // Fallback - copy to clipboard
+          navigator.clipboard.writeText(text);
+          alert('Result copied to clipboard!');
+        });
+      } else {
+        // Fallback - copy to clipboard
+        navigator.clipboard.writeText(text);
+        alert('Result copied to clipboard!');
+      }
+    }
+
+    // Update calendar
+    function updateCalendar() {
+      elements.calendarGrid.innerHTML = '';
+      
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      
+      // Get number of days in current month
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      
+      // Get first day of month
+      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+      
+      // Create day labels
+      const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      dayLabels.forEach(day => {
+        const label = document.createElement('div');
+        label.className = 'calendar-label';
+        label.textContent = day;
+        elements.calendarGrid.appendChild(label);
+      });
+      
+      // Create empty cells for days before start of month
+      for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day';
+        elements.calendarGrid.appendChild(emptyDay);
+      }
+      
+      // Create cells for each day
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+        const dayEl = document.createElement('div');
+        dayEl.className = 'calendar-day';
+        dayEl.textContent = i;
+        
+        // Check if this day has a played game
+        if (gameState.gameHistory[dateKey]) {
+          dayEl.classList.add('played');
+        }
+        
+        // Check if this is part of a streak
+        if (dateKey === getTodayKey()) {
+          dayEl.classList.add('today');
+        }
+        
+        // Check if this is part of current streak
+        const streakDays = getStreakDays();
+        if (streakDays.includes(dateKey)) {
+          dayEl.classList.add('streak');
+        }
+        
+        elements.calendarGrid.appendChild(dayEl);
+      }
+    }
+
+    // Get days in current streak
+    function getStreakDays() {
+      const streakDays = [];
+      const today = new Date();
+      
+      for (let i = 0; i < gameState.streak; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        streakDays.push(dateKey);
+      }
+      
+      return streakDays;
+    }
+
+    // Initialize game
+    function init() {
+      // Hide loading overlay after a short delay
+      setTimeout(() => {
+        elements.loadingOverlay.style.display = 'none';
+      }, 1500);
+      
+      // Store user ID and device ID
+      LocalStore.set('userId', gameState.userId);
+      LocalStore.set('deviceId', gameState.deviceId);
+      
+      // Load display name
+      elements.displayName.value = gameState.displayName || '';
+      
+      // Update statistics
+      elements.highestScore.textContent = gameState.highScore;
+      elements.longestStreak.textContent = gameState.longestStreak;
+      elements.gamesPlayed.textContent = gameState.gamesPlayed;
+      
+      if (gameState.totalAnswered > 0) {
+        const accuracyPercentage = Math.round((gameState.totalCorrect / gameState.totalAnswered) * 100);
+        elements.accuracy.textContent = `${accuracyPercentage}%`;
+      } else {
+        elements.accuracy.textContent = '0%';
+      }
+      
+      // Update streak
+      updateStreak();
+      
+      // Generate questions for today
+      gameState.questions = generateDailyQuestions(gameState.totalQuestions);
+      
+      // Check if daily challenge is already completed
+      if (!checkDailyCompletion()) {
+        // Display first question
+        displayQuestion();
+      }
+      
+      // Update countdown timer
+      updateCountdown();
+      
+      // Update calendar
+      updateCalendar();
+      
+      // Add event listeners
+      elements.nextBtn.addEventListener('click', nextQuestion);
+      elements.shareImageBtn.addEventListener('click', shareResults);
+      elements.shareResultsBtn.addEventListener('click', shareResults);
+      
+      // Privacy settings listeners
+      elements.displayName.addEventListener('change', () => {
+        gameState.displayName = elements.displayName.value;
+        LocalStore.set('displayName', gameState.displayName);
+      });
+      
+      elements.shareStats.addEventListener('change', () => {
+        LocalStore.set('shareStats', elements.shareStats.checked);
+      });
+      
+      elements.storeLocal.addEventListener('change', () => {
+        LocalStore.set('storeLocal', elements.storeLocal.checked);
+      });
+      
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabName = tab.getAttribute('data-tab');
+          
+          // Update active tab
+          document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          // Update active content
+          document.querySelectorAll('.leaderboard-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          
+          if (tabName === 'global') {
+            document.getElementById('global-leaderboard').classList.add('active');
+          } else if (tabName === 'friends') {
+            document.getElementById('friends-leaderboard').classList.add('active');
+          } else if (tabName === 'stats') {
+            document.getElementById('stats-leaderboard').classList.add('active');
+          }
+          
+          gameState.activeTab = tabName;
+        });
+      });
+    }
+
+    // Start the game
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
